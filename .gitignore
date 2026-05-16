@@ -1,0 +1,7 @@
+node_modules/
+# Never commit a project-level config that might hold a key.
+.atomicrc
+*.log
+# macOS / npm artifacts
+.DS_Store
+*.tgz

@@ -1,0 +1,43 @@
+{
+  "name": "atomic-commit",
+  "version": "1.0.0",
+  "description": "AI-assisted Conventional Commit messages generated from your staged git diff. Bring your own API key (Groq, OpenAI, or Anthropic).",
+  "author": "Vicky <vicky.kumar@dkd.co.in>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vickykumar-ctrl/atomic-commit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vickykumar-ctrl/atomic-commit/issues"
+  },
+  "homepage": "https://github.com/vickykumar-ctrl/atomic-commit#readme",
+  "bin": {
+    "atomic": "bin/atomic.js"
+  },
+  "type": "commonjs",
+  "main": "src/core.js",
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node bin/atomic.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "git",
+    "commit",
+    "commit-message",
+    "conventional-commits",
+    "ai",
+    "groq",
+    "llm",
+    "cli",
+    "git-hook"
+  ],
+  "license": "MIT"
+}

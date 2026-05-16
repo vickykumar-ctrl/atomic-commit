@@ -1,0 +1,16 @@
+#!/bin/sh
+# atomic — AI-assisted commit messages (prepare-commit-msg hook)
+# Managed by `atomic install-hook`. Do not edit by hand.
+# Bypass once with:  ATOMIC_SKIP=1 git commit
+
+[ -n "$ATOMIC_SKIP" ] && exit 0
+
+# $2 is the message source. Skip when the user already supplied a message
+# (-m), or for merge/squash/amend commits.
+case "$2" in
+  message|merge|squash|commit) exit 0 ;;
+esac
+
+# Never block a commit: the hook command swallows its own errors and exits 0.
+"__NODE__" "__BIN__" hook "$1"
+exit 0
