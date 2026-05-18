@@ -44,10 +44,17 @@ test('cli: --help shows usage', () => {
   assert.match(stdout, /install-hook/);
 });
 
-test('cli: an unknown command exits non-zero', () => {
-  const { status, stdout } = runCli(['frobnicate']);
+test('cli: free-text args are treated as an intent hint, not a command', () => {
+  const { stdout } = runCli(['fixed the login crash'], createTempRepo());
+  // Reaches generate (nothing staged) instead of an "unknown command" error.
+  assert.match(stdout, /Nothing staged/);
+  assert.ok(!stdout.includes('unknown command'));
+});
+
+test('cli: an invalid --type is rejected before any work', () => {
+  const { status, stdout } = runCli(['--type', 'bogus'], createTempRepo());
   assert.equal(status, 1);
-  assert.match(stdout, /unknown command/);
+  assert.match(stdout, /invalid --type/);
 });
 
 test('cli: reports when there is nothing staged', () => {

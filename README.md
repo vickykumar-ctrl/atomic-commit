@@ -80,9 +80,25 @@ Useful flags:
 atomic --yes              # commit immediately, no prompt
 atomic --dry-run          # print the message only
 atomic --provider openai --model gpt-4o-mini
+atomic --type fix         # force the commit type (feat, fix, docs, refactor, ...)
 atomic --max-diff-chars 9000   # raise/lower the diff size cap (default 6000)
 atomic --no-verify        # pass through to git commit
 ```
+
+### Getting the type right
+
+A diff alone is ambiguous — a changed `if` could be a bug fix, a refactor, or a
+feature. atomic uses three signals (most authoritative first) so it classifies
+the commit correctly:
+
+```bash
+atomic --type fix                          # 1. you state the type outright
+atomic "fixed the login crash on empty password"  # 2. a free-text intent hint
+git checkout -b fix/login-crash && atomic  # 3. the branch name (fix/, hotfix/, feat/, ...)
+```
+
+With none of these, atomic still infers the type from the diff — the signals
+just make a bug fix reliably come out as `fix:` instead of a guess.
 
 ### Git hook
 

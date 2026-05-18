@@ -21,7 +21,7 @@ function fail(code, message) {
  *   NO_KEY       - no API key configured for the chosen provider
  *   (other)      - provider / network error
  */
-async function produceMessage(config, { signal } = {}) {
+async function produceMessage(config, { signal, type, intent } = {}) {
   if (!git.isGitRepo()) {
     throw fail('NOT_A_REPO', 'not inside a git repository');
   }
@@ -53,6 +53,9 @@ async function produceMessage(config, { signal } = {}) {
     diff: staged,
     files,
     recentSubjects: git.recentSubjects(10),
+    branch: git.currentBranch(),
+    type,
+    intent,
   });
 
   const raw = await config.providerDef.generate({

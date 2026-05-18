@@ -10,6 +10,7 @@ const git = require('./git');
 const { produceMessage } = require('./core');
 const { loadConfig, saveGlobalConfig, GLOBAL_PATH } = require('./config');
 const { registry, getProvider } = require('./providers');
+const { TYPES } = require('./prompt');
 const hook = require('./hook/install');
 
 const { version } = require('../package.json');
@@ -159,9 +160,11 @@ function parseArgs(argv) {
     else if (a === '--provider') flags.provider = argv[++i];
     else if (a === '--model') flags.model = argv[++i];
     else if (a === '--max-diff-chars') flags.maxDiffChars = argv[++i];
+    else if (a === '--type') flags.type = argv[++i];
     else if (a.startsWith('--provider=')) flags.provider = a.slice(11);
     else if (a.startsWith('--model=')) flags.model = a.slice(8);
     else if (a.startsWith('--max-diff-chars=')) flags.maxDiffChars = a.slice(17);
+    else if (a.startsWith('--type=')) flags.type = a.slice(7);
     else positional.push(a);
   }
   return { flags, positional };
@@ -171,6 +174,7 @@ const HELP = `${c.bold('atomic')} — AI-assisted Conventional Commit messages
 
 ${c.bold('Usage')}
   atomic                 Generate a message for staged changes, then commit
+  atomic "<intent>"      Generate using your description as an intent hint
   atomic init            Set up your provider, API key and model
   atomic install-hook    Install the prepare-commit-msg git hook in this repo
   atomic uninstall-hook  Remove the git hook
@@ -182,6 +186,7 @@ ${c.bold('Options')}
       --no-verify    Pass --no-verify to git commit
       --provider <p> Override provider (groq | openai | anthropic)
       --model <m>    Override the model
+      --type <t>     Force the commit type (feat, fix, docs, refactor, ...)
       --max-diff-chars <n>  Cap the diff sent to the model (default 6000)
   -v, --version      Print version
 
@@ -249,14 +254,15 @@ async function cmdHook(file) {
   }
 }
 
-async function cmdGenerate(flags) {
+async function cmdGenerate(flags, intent = '') {
   const config = loadConfig({ flags });
+  const opts = { type: flags.type, intent };
 
   let result;
   try {
     result = await withSpinner(
       `generating message with ${config.providerDef.label} (${config.model})…`,
-      produceMessage(config)
+      produceMessage(config, opts)
     );
   } catch (err) {
     if (err.code === 'NO_STAGED') {
@@ -333,7 +339,7 @@ async function cmdGenerate(flags) {
     if (choice === 'r') {
       let next;
       try {
-        next = await withSpinner('regenerating…', produceMessage(config));
+        next = await withSpinner('regenerating…', produceMessage(config, opts));
       } catch (err) {
         if (err.code === 'TOO_LARGE') {
           out(c.red(`${err.message}.`));
@@ -381,12 +387,15 @@ async function run(argv) {
   if (flags.version) return out(version);
   if (flags.help) return out(HELP);
 
+  if (flags.type && !TYPES.includes(flags.type)) {
+    out(c.red(`invalid --type "${flags.type}". Valid types: ${TYPES.join(', ')}.`));
+    process.exitCode = 1;
+    return;
+  }
+
   const command = positional[0];
   try {
     switch (command) {
-      case undefined:
-        await cmdGenerate(flags);
-        break;
       case 'init':
         await cmdInit();
         break;
@@ -403,9 +412,9 @@ async function run(argv) {
         out(HELP);
         break;
       default:
-        out(c.red(`unknown command "${command}"`));
-        out(HELP);
-        process.exitCode = 1;
+        // No subcommand, or free text → generate. Any positional words are
+        // an intent hint describing what the developer changed.
+        await cmdGenerate(flags, positional.join(' ').trim());
     }
   } finally {
     // Always release stdin, otherwise an open readline keeps the process alive.

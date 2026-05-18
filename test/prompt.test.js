@@ -3,7 +3,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { buildMessages, clean } = require('../src/prompt');
+const { buildMessages, clean, TYPES } = require('../src/prompt');
 
 // ── buildMessages ────────────────────────────────────────────────────────
 
@@ -46,6 +46,37 @@ test('buildMessages: omits the style block when there is no history', () => {
     recentSubjects: [],
   });
   assert.ok(!messages[1].content.includes('Recent commit subjects'));
+});
+
+test('buildMessages: includes branch, type and intent hints when given', () => {
+  const messages = buildMessages({
+    diff: 'd',
+    files: [{ status: 'M', path: 'x' }],
+    recentSubjects: [],
+    branch: 'fix/login-crash',
+    type: 'fix',
+    intent: 'fixed the crash on empty password',
+  });
+  assert.match(messages[1].content, /fix\/login-crash/);
+  assert.match(messages[1].content, /requires this commit type: "fix"/);
+  assert.match(messages[1].content, /fixed the crash on empty password/);
+});
+
+test('buildMessages: omits hint lines when no signals are supplied', () => {
+  const messages = buildMessages({
+    diff: 'd',
+    files: [{ status: 'M', path: 'x' }],
+    recentSubjects: [],
+  });
+  assert.ok(!messages[1].content.includes('commit type'));
+  assert.ok(!messages[1].content.includes('Current git branch'));
+  assert.ok(!messages[1].content.includes('says they changed'));
+});
+
+test('TYPES: exposes the Conventional Commit types including fix and feat', () => {
+  assert.ok(Array.isArray(TYPES) && TYPES.length === 10);
+  assert.ok(TYPES.includes('fix'));
+  assert.ok(TYPES.includes('feat'));
 });
 
 // ── clean ────────────────────────────────────────────────────────────────

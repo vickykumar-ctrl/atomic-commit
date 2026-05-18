@@ -57,6 +57,13 @@ test('recentSubjects: empty on a fresh repo, populated after a commit', () => {
   assert.deepEqual(git.recentSubjects(5), ['feat: first commit']);
 });
 
+test('currentBranch: returns the checked-out branch name', () => {
+  const repo = createTempRepo();
+  gitC(repo, ['checkout', '-b', 'fix/login-crash']);
+  process.chdir(repo);
+  assert.equal(git.currentBranch(), 'fix/login-crash');
+});
+
 test('commit: creates a commit and preserves a multi-line message', () => {
   const repo = createTempRepo();
   writeAndStage(repo, 'file.js', 'const v = 1;\n');

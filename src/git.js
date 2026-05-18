@@ -61,6 +61,17 @@ function stagedFiles() {
   });
 }
 
+/** Current branch name, or '' on a detached HEAD or any error. */
+function currentBranch() {
+  try {
+    // symbolic-ref reads HEAD's target ref directly, so it works even on an
+    // unborn branch (no commits yet); it fails on a detached HEAD.
+    return git(['symbolic-ref', '--short', 'HEAD']);
+  } catch {
+    return '';
+  }
+}
+
 /** Recent commit subject lines, for style reference. Empty on a fresh repo. */
 function recentSubjects(count = 10) {
   try {
@@ -90,6 +101,7 @@ module.exports = {
   gitDir,
   stagedDiff,
   stagedFiles,
+  currentBranch,
   recentSubjects,
   commit,
 };
