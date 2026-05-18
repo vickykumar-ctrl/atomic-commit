@@ -158,8 +158,10 @@ function parseArgs(argv) {
     else if (a === '--version' || a === '-v') flags.version = true;
     else if (a === '--provider') flags.provider = argv[++i];
     else if (a === '--model') flags.model = argv[++i];
+    else if (a === '--max-diff-chars') flags.maxDiffChars = argv[++i];
     else if (a.startsWith('--provider=')) flags.provider = a.slice(11);
     else if (a.startsWith('--model=')) flags.model = a.slice(8);
+    else if (a.startsWith('--max-diff-chars=')) flags.maxDiffChars = a.slice(17);
     else positional.push(a);
   }
   return { flags, positional };
@@ -180,6 +182,7 @@ ${c.bold('Options')}
       --no-verify    Pass --no-verify to git commit
       --provider <p> Override provider (groq | openai | anthropic)
       --model <m>    Override the model
+      --max-diff-chars <n>  Cap the diff sent to the model (default 6000)
   -v, --version      Print version
 
 ${c.bold('Config')}  precedence: flags > env vars > ./.atomicrc > ~/.atomicrc
@@ -271,6 +274,13 @@ async function cmdGenerate(flags) {
       process.exitCode = 1;
       return;
     }
+    if (err.code === 'TOO_LARGE') {
+      out(c.red(`${err.message}.`));
+      out(c.dim('  Stage fewer files or commit in smaller chunks,'));
+      out(c.dim('  lower --max-diff-chars, or upgrade your provider tier.'));
+      process.exitCode = 1;
+      return;
+    }
     throw err;
   }
 
@@ -321,7 +331,18 @@ async function cmdGenerate(flags) {
       return;
     }
     if (choice === 'r') {
-      const next = await withSpinner('regenerating…', produceMessage(config));
+      let next;
+      try {
+        next = await withSpinner('regenerating…', produceMessage(config));
+      } catch (err) {
+        if (err.code === 'TOO_LARGE') {
+          out(c.red(`${err.message}.`));
+          out(c.dim('  Lower --max-diff-chars or stage fewer files, then try again.'));
+        } else {
+          out(c.red(`Regeneration failed: ${err.message}`));
+        }
+        continue;
+      }
       const duplicate = candidates.findIndex((cdt) => cdt.message === next.message);
       if (duplicate !== -1) {
         currentIndex = duplicate;

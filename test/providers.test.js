@@ -66,6 +66,34 @@ test('groq: throws when the response has no content', async () => {
   }
 });
 
+test('groq: tags a 413 response with err.code TOO_LARGE', async () => {
+  const m = mockFetch(() =>
+    errorResponse(413, 'Request too large for model ...', 'Payload Too Large')
+  );
+  try {
+    await assert.rejects(
+      groq.generate({ apiKey: 'k', model: 'm', messages: [] }),
+      (err) => err.code === 'TOO_LARGE' && /too large/i.test(err.message)
+    );
+  } finally {
+    m.restore();
+  }
+});
+
+test('groq: tags a 429 "too large" rate-limit response as TOO_LARGE', async () => {
+  const m = mockFetch(() =>
+    errorResponse(429, 'Request too large for model ... tokens per minute')
+  );
+  try {
+    await assert.rejects(
+      groq.generate({ apiKey: 'k', model: 'm', messages: [] }),
+      (err) => err.code === 'TOO_LARGE'
+    );
+  } finally {
+    m.restore();
+  }
+});
+
 test('groq: wraps a network failure in a readable error', async () => {
   const m = mockFetch(() => {
     throw new Error('ECONNREFUSED');

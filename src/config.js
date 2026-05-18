@@ -61,7 +61,7 @@ function loadConfig({ cwd = process.cwd(), flags = {} } = {}) {
     Number(flags.maxDiffChars) ||
     Number(project.maxDiffChars) ||
     Number(global.maxDiffChars) ||
-    12000;
+    6000;
 
   return { provider, providerDef, apiKey, model, maxDiffChars };
 }

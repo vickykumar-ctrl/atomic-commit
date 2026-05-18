@@ -43,9 +43,17 @@ function redactSecrets(text) {
   return out;
 }
 
+// Room reserved per file for the "... [N chars truncated]" note so the
+// truncated output as a whole still fits inside `maxChars`.
+const TRUNCATE_NOTE = 60;
+// Below this per-file budget there is no point showing hunks at all.
+const MIN_HUNK_BUDGET = 200;
+
 /**
- * Keep the diff under `maxChars`. Splits by file and truncates each file's
- * hunk proportionally so the model still sees every changed file.
+ * Keep the diff at or under `maxChars`. Splits by file and truncates each
+ * file's hunk proportionally so the model still sees every changed file.
+ * When too many files are staged for any meaningful per-file budget, falls
+ * back to listing just the file headers. The result never exceeds `maxChars`.
  */
 function truncate(diffText, maxChars) {
   if (diffText.length <= maxChars) return diffText;
@@ -55,12 +63,27 @@ function truncate(diffText, maxChars) {
     return `${diffText.slice(0, maxChars)}\n... [diff truncated]\n`;
   }
 
-  const budget = Math.max(500, Math.floor(maxChars / sections.length));
+  const budget = Math.floor(maxChars / sections.length);
+
+  // Too many files to show real hunks — keep just the per-file header lines
+  // so every file is still represented without blowing the size cap.
+  if (budget < MIN_HUNK_BUDGET) {
+    const note = `... [${sections.length} files staged — diff bodies omitted]\n`;
+    let out = '';
+    for (const section of sections) {
+      const header = `${section.split('\n')[0]}\n`;
+      if (out.length + header.length > maxChars - note.length) break;
+      out += header;
+    }
+    return `${out}${note}`;
+  }
+
   return sections
     .map((section) => {
       if (section.length <= budget) return section;
-      const dropped = section.length - budget;
-      return `${section.slice(0, budget)}\n... [${dropped} chars truncated for this file]\n`;
+      const keep = budget - TRUNCATE_NOTE;
+      const dropped = section.length - keep;
+      return `${section.slice(0, keep)}\n... [${dropped} chars truncated for this file]\n`;
     })
     .join('');
 }

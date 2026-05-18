@@ -28,7 +28,7 @@ module.exports = {
         },
         body: JSON.stringify({
           model: model || this.defaultModel,
-          max_tokens: 600,
+          max_tokens: 400,
           temperature: 0.3,
           system,
           messages: rest,
@@ -41,6 +41,13 @@ module.exports = {
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
+      if (res.status === 413 || (res.status === 429 && /too large/i.test(body))) {
+        const err = new Error(
+          `the staged diff is too large for ${model || this.defaultModel}'s per-minute token limit`
+        );
+        err.code = 'TOO_LARGE';
+        throw err;
+      }
       throw new Error(`API responded ${res.status} ${res.statusText}: ${body.slice(0, 300)}`);
     }
 

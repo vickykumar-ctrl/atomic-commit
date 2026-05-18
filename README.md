@@ -80,6 +80,7 @@ Useful flags:
 atomic --yes              # commit immediately, no prompt
 atomic --dry-run          # print the message only
 atomic --provider openai --model gpt-4o-mini
+atomic --max-diff-chars 9000   # raise/lower the diff size cap (default 6000)
 atomic --no-verify        # pass through to git commit
 ```
 
@@ -113,7 +114,8 @@ Precedence — first match wins:
 {
   "provider": "groq",
   "model": "openai/gpt-oss-120b",
-  "apiKey": "gsk_..."
+  "apiKey": "gsk_...",
+  "maxDiffChars": 6000
 }
 ```
 
@@ -121,6 +123,10 @@ Precedence — first match wins:
 // ./.atomicrc  (safe to commit — keyless; pin the model per project)
 { "provider": "groq", "model": "llama-3.3-70b-versatile" }
 ```
+
+`maxDiffChars` caps how much of the staged diff is sent to the model
+(default `6000`). The default is sized for Groq's free tier — raise it on a
+paid tier for more context, lower it if you hit a per-minute token limit.
 
 ## How it works
 
@@ -143,7 +149,7 @@ git commit
 Built-in safeguards:
 
 - **Secret redaction** — known key patterns (`gsk_`, `sk-`, AWS keys, PEM blocks) are stripped before the diff leaves your machine.
-- **Large diffs** — truncated per-file so every changed file is still represented.
+- **Large diffs** — capped at `maxDiffChars` (default 6000) and truncated per-file so every changed file is still represented while staying within the provider's per-minute token limit.
 - **Lockfile-only changes** — get a canned `chore:` message with no API call.
 - **Hook safety** — the hook never blocks a commit; on any error it silently falls back to the normal editor.
 

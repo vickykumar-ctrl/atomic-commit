@@ -33,7 +33,7 @@ test('loadConfig: sensible defaults when nothing is configured', () => {
   assert.equal(cfg.provider, 'groq');
   assert.equal(cfg.model, 'openai/gpt-oss-120b');
   assert.equal(cfg.apiKey, '');
-  assert.equal(cfg.maxDiffChars, 12000);
+  assert.equal(cfg.maxDiffChars, 6000);
 });
 
 test('loadConfig: CLI flags take top precedence', () => {

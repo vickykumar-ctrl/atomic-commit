@@ -81,3 +81,24 @@ test('truncate: keeps every file represented in a multi-file diff', () => {
   assert.match(out, /a\/a\.js/);
   assert.match(out, /a\/b\.js/);
 });
+
+test('truncate: output never exceeds maxChars even with many files', () => {
+  // Regression: the old per-file 500-char floor let the result grow to
+  // numFiles * 500 regardless of maxChars.
+  let big = '';
+  for (let i = 0; i < 100; i++) {
+    big += `diff --git a/f${i}.js b/f${i}.js\n` + `+line ${i}\n`.repeat(50);
+  }
+  const out = truncate(big, 6000);
+  assert.ok(out.length <= 6000, `output ${out.length} should be <= 6000`);
+});
+
+test('truncate: falls back to headers-only when too many files are staged', () => {
+  let big = '';
+  for (let i = 0; i < 100; i++) {
+    big += `diff --git a/f${i}.js b/f${i}.js\n` + `+line ${i}\n`.repeat(50);
+  }
+  const out = truncate(big, 6000);
+  assert.match(out, /diff bodies omitted/);
+  assert.ok(out.length <= 6000);
+});
